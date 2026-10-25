@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#155846">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Құран күнделігі 2.3</title>
+<style>
+:root{--bg:#f5f7f3;--card:#fff;--ink:#1b322a;--muted:#5f7068;--green:#155846;--accent:#39a77a;--line:#dce5dd;--soft:#e7f2eb;--warn:#bd9b55}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}
+body.dark{--bg:#10221b;--card:#1b3429;--ink:#f0f5ef;--muted:#b5c7bc;--green:#2f8a64;--accent:#67c49a;--line:#365746;--soft:#294738}
+header{background:#155846;color:#fff;padding:20px 16px 16px}
+header .wrap,main{max-width:780px;margin:auto}
+h1{font-size:23px;margin:0}h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:14px 0 6px}
+p{margin:7px 0}header p{opacity:.88;font-size:13px}
+main{padding:14px 16px 70px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;margin:0 0 13px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.muted,small{color:var(--muted)}
+.pill{display:inline-block;border-radius:30px;background:var(--soft);padding:4px 10px;font-size:12px}
+.big{font-size:34px;font-weight:750;line-height:1.1}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:10px 13px;min-height:44px}
+.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.quick{font-size:18px;font-weight:700;flex:1}
+.buttons{display:flex;gap:8px;flex-wrap:wrap}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;min-height:44px}
+input[type=checkbox]{width:auto;min-height:0;margin-right:6px}
+label{font-weight:600;font-size:13px;display:block;margin:10px 0 5px}
+label.check{font-weight:500;display:flex;align-items:center}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 0 14px}
+nav button{white-space:nowrap;padding:8px 12px}
+nav button.active{background:var(--green);color:#fff;border-color:var(--green)}
+.bar{height:10px;background:var(--soft);border-radius:12px;overflow:hidden;margin:6px 0}
+.fill{height:100%;background:var(--accent)}
+.notice{border-left:4px solid var(--warn);padding:10px;background:var(--soft);border-radius:7px;font-size:13px}
+.ok{border-left-color:var(--accent)}
+.entry{padding:11px 0;border-bottom:1px solid var(--line)}.entry:last-child{border:0}
+.entry button{min-height:36px;padding:6px 10px;font-size:13px;margin-top:6px}
+.hidden{display:none!important}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center}
+.day{padding:8px 2px;border:1px solid var(--line);border-radius:10px;font-size:12px}
+.day.on{background:var(--soft);border-color:var(--accent)}.day.pause{border-style:dashed}
+details{margin-top:12px}summary{cursor:pointer;font-weight:650;min-height:32px}
+.tag{font-size:11px;border-radius:20px;padding:2px 8px;background:var(--soft);margin-left:6px}
+.footer{font-size:12px;text-align:center;color:var(--muted);padding:18px}
+@media(max-width:360px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Құран күнделігі</h1><p>Ықыласпен оқыңыз. Есеп — тек өзіңіз үшін.</p></div></header>
+<main>
+<div class="row">
+  <div style="flex:1;min-width:160px"><label for="profile" style="margin:0 0 4px">Оқырман</label><select id="profile"></select></div>
+  <button id="addProfile" style="align-self:flex-end">+ Оқырман</button>
+</div>
+<nav id="nav">
+  <button data-tab="home" class="active">Басты бет</button>
+  <button data-tab="history">Күнделік</button>
+  <button data-tab="family">Бірлескен хатым</button>
+  <button data-tab="notes">Ой-толғаныс</button>
+  <button data-tab="settings">Баптау</button>
+</nav>
+
+<!-- БАСТЫ БЕТ -->
+<section id="home">
+  <div class="card">
+    <div class="row"><div><small>Негізгі хатым · келесі бет</small><div class="big" id="nextPage">1</div></div><span class="pill" id="mushafLabel"></span></div>
+    <p class="muted" id="nextAyah"></p>
+    <p id="todayInfo"></p>
+    <div class="buttons">
+      <button class="primary quick" data-quick="1">+1 бет</button>
+      <button class="primary quick" data-quick="2">+2 бет</button>
+      <button class="primary quick" data-quick="5">+5 бет</button>
+    </div>
+    <details id="formBox"><summary>Нақты аралықты немесе басқа оқуды тіркеу</summary>
+      <form id="readingForm">
+        <label for="track">Оқу бағыты</label>
+        <select id="track">
+          <option value="main">Негізгі хатым («Жалғастыру» осыған сүйенеді)</option>
+          <option value="supplementary">Бөлек оқу (сүре, Кәһф беттері т.б.)</option>
+          <option value="family">Бірлескен хатым</option>
+        </select>
+        <label class="check hidden" id="countsBox"><input type="checkbox" id="countsToKhatm">Осы беттерді хатымның қамтылған беттеріне қосу</label>
+        <div class="two">
+          <div><label for="fromPage">Бастапқы бет</label><input id="fromPage" type="number" inputmode="numeric" min="1" max="604" required></div>
+          <div><label for="toPage">Соңғы бет</label><input id="toPage" type="number" inputmode="numeric" min="1" max="604" required></div>
+        </div>
+        <label for="activity">Әрекет түрі</label>
+        <select id="activity"><option value="read">Арабша оқу</option><option value="translation">Мағынасын оқу</option><option value="listen">Тыңдау</option><option value="memorize">Жаттау</option><option value="review">Қайталау</option></select>
+        <label for="entryDate">Күні</label><input id="entryDate" type="date" required>
+        <label for="entryNote">Ескерту (міндетті емес)</label><input id="entryNote" maxlength="300" placeholder="Мысалы: бүгін қиын сөздер кездесті">
+        <button class="primary" style="margin-top:12px;width:100%">Жазбаны сақтау</button>
+      </form>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Хатым барысы</h2>
+    <div class="row"><strong id="coverage">0 / 604 бет</strong><span class="muted" id="percent">0%</span></div>
+    <div class="bar"><div class="fill" id="coverageBar" style="width:0%"></div></div>
+    <p class="muted" id="coverageInfo"></p>
+    <p class="notice ok hidden" id="khatmDone"></p>
+    <div class="row"><button id="newKhatm">Жаңа жеке хатым</button><span class="muted" id="khatmName"></span></div>
+  </div>
+
+  <div class="card">
+    <h2>Осы аптаның ырғағы</h2>
+    <div class="week" id="week"></div>
+    <p class="muted" id="weekText"></p>
+    <div class="row"><button id="pauseToday">Бүгін — үзіліс</button><button id="toggleStats">Статистиканы жасыру</button></div>
+    <p id="totalRead" class="muted"></p>
+    <details><summary>Басқа күнге үзіліс белгілеу</summary>
+      <label for="pauseDate">Күн</label><input type="date" id="pauseDate">
+      <label for="pauseReason">Себебі (міндетті емес, жеке)</label>
+      <select id="pauseReason"><option value="unspecified">Көрсетпеу</option><option value="health">Денсаулық</option><option value="travel">Сапар</option><option value="religious">Шариғи үзіліс</option><option value="other">Басқа</option></select>
+      <button id="addPause" style="margin-top:8px">Үзілісті белгілеу / алып тастау</button>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>Жұма · «Кәһф» сүресі</h2>
+    <p class="muted">110 аят. Бейсенбі мен жұмадағы жазбалар есептеледі. Оқу мен тыңдау бөлек.</p>
+    <div class="two">
+      <div><label for="kahfFrom">Бірінші аят</label><input id="kahfFrom" type="number" inputmode="numeric" min="1" max="110" value="1"></div>
+      <div><label for="kahfTo">Соңғы аят</label><input id="kahfTo" type="number" inputmode="numeric" min="1" max="110" value="110"></div>
+    </div>
+    <label for="kahfMode">Әрекет</label>
+    <select id="kahfMode"><option value="read">Арабша оқу</option><option value="listen">Тыңдау</option><option value="translation">Мағынасын оқу</option></select>
+    <button id="saveKahf" class="primary" style="margin-top:10px;width:100%">Аяттарды тіркеу</button>
+    <p class="muted" id="kahfInfo"></p>
+  </div>
+
+  <div class="card">
+    <h2>Жоспар — бағдар ғана</h2>
+    <label for="targetDate">Хатымды аяқтау күні</label><input id="targetDate" type="date">
+    <button id="saveTarget" style="margin-top:9px">Күнді сақтау</button>
+    <p class="muted" id="targetInfo"></p>
+  </div>
+</section>
+
+<!-- КҮНДЕЛІК -->
+<section id="history" class="hidden">
+  <div class="card">
+    <h2>Жеке хатымдар</h2>
+    <div id="khatmList"></div>
+  </div>
+  <div class="card">
+    <h2>Оқу тарихы</h2>
+    <p class="notice">Жазбалар енгізілген күйінде сақталады. Қайта оқылған беттер тарихта қалады, бірақ хатымда бір рет саналады.</p>
+    <div id="entries"></div>
+  </div>
+</section>
+
+<!-- БІРЛЕСКЕН ХАТЫМ -->
+<section id="family" class="hidden">
+  <div class="card">
+    <h2>Бірлескен хатым</h2>
+    <p class="muted">Мұнда ешкімнің жеке статистикасы салыстырылмайды. Тек «Бірлескен хатым» бағытымен тіркелген арабша оқу саналады; бір бетті екі адам оқыса, бір рет саналады.</p>
+    <div id="familyNone" class="hidden"><p>Қазір белсенді бірлескен хатым жоқ.</p></div>
+    <div id="familyActive">
+      <p><strong id="familyTitle"></strong></p>
+      <div class="bar"><div class="fill" id="familyBar" style="width:0%"></div></div>
+      <p class="muted" id="familyInfo"></p>
+      <label for="juz">Пара</label><select id="juz"></select>
+      <label for="assignee">Кімге тағайындалады?</label><select id="assignee"></select>
+      <button id="assignJuz" class="primary" style="margin-top:10px;width:100%">Тағайындау</button>
+      <div id="assignments"></div>
+    </div>
+    <button id="newFamily" style="margin-top:12px;width:100%">Жаңа бірлескен хатым бастау</button>
+  </div>
+  <div class="card"><h2>Бұрынғы бірлескен хатымдар</h2><div id="familyHistory"></div></div>
+</section>
+
+<!-- ОЙ-ТОЛҒАНЫС -->
+<section id="notes" class="hidden">
+  <div class="card">
+    <h2>Тәдәббур · жеке ойлар</h2>
+    <div class="two">
+      <div><label for="noteSurah">Сүре (1–114)</label><input id="noteSurah" type="number" inputmode="numeric" min="1" max="114"></div>
+      <div><label for="noteAyah">Аят</label><input id="noteAyah" type="number" inputmode="numeric" min="1"></div>
+    </div>
+    <label for="noteText">Ой немесе сұрақ</label><textarea id="noteText" rows="4" placeholder="Аяттан қандай сабақ алдыңыз?"></textarea>
+    <button id="saveNote" class="primary" style="margin-top:9px;width:100%">Сақтау</button>
+    <div id="notesList"></div>
+  </div>
+</section>
+
+<!-- БАПТАУ -->
+<section id="settings" class="hidden">
+  <div class="card">
+    <h2>Жеке баптаулар</h2>
+    <label for="profileName">Оқырманның аты</label><input id="profileName" maxlength="70">
+    <label for="mushaf">Мұсхаф басылымы</label>
+    <select id="mushaf"></select>
+    <p class="muted">Қалай білуге болады: мұсхафыңыздың <b>586-беті</b> «Тәкуир» сүресінің басымен басталса — ескі басылым; «Абаса» сүресінің соңғы аятымен басталса — 1441 х. басылымы. Екеуінің 579 беті бірдей, 25 беті өзгеше.</p>
+    <p class="muted" id="mushafNote"></p>
+    <label for="dailyGoal">Күндік бағдар (бет, 0 — көрсетпеу)</label><input id="dailyGoal" type="number" inputmode="numeric" min="0" max="604">
+    <label class="check"><input id="hideStats" type="checkbox">Статистиканы жасыру</label>
+    <label class="check"><input id="darkMode" type="checkbox">Қараңғы режим</label>
+    <button id="saveSettings" class="primary" style="margin-top:10px;width:100%">Баптауларды сақтау</button>
+  </div>
+  <div class="card">
+    <h2>Резервтік көшірме</h2>
+    <p class="muted">Барлық жазбалар тек осы телефонда сақталады. Бағдарлама көшірмені өздігінен жасай алмайды — аптасына бір рет өзіңіз сақтаңыз.</p>
+    <p class="notice">Көшірмеде жеке ойларыңыз және үзіліс себептері бар. «Бөлісу» арқылы жібергенде алушыны мұқият таңдаңыз (мысалы, Telegram-дағы «Избранное»).</p>
+    <div class="buttons" style="margin-top:10px">
+      <button id="exportFile" class="primary">Файлға сақтау</button>
+      <button id="exportShare">Бөлісу</button>
+      <button id="importButton">Көшірмеден қалпына келтіру</button>
+      <input id="importFile" type="file" accept=".json,application/json" class="hidden">
+    </div>
+    <p id="backupStatus" class="muted"></p>
+  </div>
+  <div class="card"><h2>Деректер туралы</h2><p class="muted" id="metaInfo"></p></div>
+</section>
+<div class="footer">Құран күнделігі 2.3 · Жеке әрі қысымсыз оқу</div>
+</main>
+<script src="quran-data.js"></script>
+<script>
+(() => {
+'use strict';
+const APP_VERSION = '2.3';
+const SCHEMA = 4;
+const KEY = 'quran-kundeligi-v2-1'; // 2.1–2.2 деректерімен бірдей кілт (жоғалмауы үшін)
+const DEFAULT_MUSHAF = 'madani-1405';
+const Q = window.QURAN_DATA;
+const $ = id => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+const nowISO = () => new Date().toISOString();
+const localDate = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const validRange = (a, b, max = 604) => Number.isInteger(a) && Number.isInteger(b) && a >= 1 && b >= a && b <= max;
+const MODE = { read: 'Арабша оқу', translation: 'Мағынасы', listen: 'Тыңдау', memorize: 'Жаттау', review: 'Қайталау' };
+const TRACK = { main: 'Негізгі', supplementary: 'Бөлек', family: 'Бірлескен' };
+const ARRAYS = ['profiles', 'entries', 'pauses', 'notes', 'khatms', 'familyKhatms', 'assignments'];
+
+/* ---------- Деректер құрылымы және migration ---------- */
+const blank = () => ({ schemaVersion: SCHEMA, profiles: [], entries: [], pauses: [], notes: [], khatms: [], familyKhatms: [], assignments: [], settings: { dark: false }, backupAt: null });
+
+// v3 (2.1–2.2) → v4 (2.3). Бастапқы енгізу (rawInput) өзгертілмейді.
+function migrate(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.profiles)) return blank();
+  const v = data.schemaVersion || 3;
+  if (v > SCHEMA) throw Error(`Бұл файл жаңарақ нұсқадан (schemaVersion ${v}). Алдымен бағдарламаны жаңартыңыз.`);
+  for (const k of ARRAYS) if (!Array.isArray(data[k])) data[k] = [];
+  data.settings ||= { dark: false };
+  if (v < 4) {
+    const fix = m => (m === 'madani-604' || !m ? DEFAULT_MUSHAF : m);
+    data.profiles.forEach(p => { p.mushaf = fix(p.mushaf); });
+    data.entries.forEach(e => {
+      e.mushafId = fix(e.mushafId);
+      if (e.kind === 'pages' && !e.readingTrack) e.readingTrack = 'main';
+      e.schemaVersion = 4;
+    });
+    data.khatms.forEach(k => { k.mushafId ||= fix(data.profiles.find(p => p.id === k.profileId)?.mushaf); });
+    if (data.familyStart || data.assignments.length) {
+      const fk = { id: uid(), name: '1-бірлескен хатым', mushafId: DEFAULT_MUSHAF, createdAt: data.familyStart || nowISO(), completedAt: null, closedAt: null };
+      data.familyKhatms.push(fk);
+      data.assignments.forEach(a => { a.familyKhatmId ||= fk.id; a.id ||= uid(); });
+    }
+    delete data.familyStart;
+    delete data.pageStarts;
+    data.schemaVersion = 4;
+  }
+  return data;
+}
+
+let db;
+try {
+  const raw = localStorage.getItem(KEY);
+  const parsed = raw ? JSON.parse(raw) : null;
+  if (parsed && (parsed.schemaVersion || 3) < SCHEMA && !localStorage.getItem(KEY + '-before-v4')) localStorage.setItem(KEY + '-before-v4', raw); // migration алдындағы көшірме
+  db = parsed ? migrate(parsed) : blank();
+} catch (e) { db = blank(); }
+
+function ensureBasics() {
+  if (!db.profiles.length) {
+    const id = uid();
+    db.profiles.push({ id, name: 'Мен', mushaf: DEFAULT_MUSHAF, goal: 1, hideStats: false, target: '' });
+  }
+  db.profiles.forEach(p => {
+    if (!Q.mushafs[p.mushaf]) p.mushaf = DEFAULT_MUSHAF;
+    if (!db.khatms.some(k => k.profileId === p.id)) db.khatms.push({ id: uid(), profileId: p.id, name: '1-хатым', mushafId: p.mushaf, createdAt: nowISO(), completedAt: null });
+  });
+}
+ensureBasics();
+
+let active = localStorage.getItem(KEY + '-active') || db.profiles[0].id;
+if (!db.profiles.some(p => p.id === active)) active = db.profiles[0].id;
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); localStorage.setItem(KEY + '-active', active); }
+  catch (e) { alert('Деректерді сақтау мүмкін болмады. Дереу резервтік көшірме жасаңыз. ' + e.message); }
+}
+
+/* ---------- Есептеу ---------- */
+const profile = () => db.profiles.find(p => p.id === active);
+const myEntries = () => db.entries.filter(e => e.profileId === active);
+const khatm = () => db.khatms.filter(k => k.profileId === active).at(-1);
+const familyKhatm = () => db.familyKhatms.filter(f => !f.closedAt).at(-1);
+const rows = id => Q.rows(id);
+const prevAyah = ([s, a]) => (a > 1 ? [s, a - 1] : [s - 1, Q.surahAyahCounts[s - 2]]);
+function ayahRange(from, to, mushafId) {
+  const r = rows(mushafId); if (!r || !validRange(from, to)) return '';
+  const a = r[from - 1], b = to < 604 ? prevAyah(r[to]) : [114, 6];
+  return `${a[0]}:${a[1]}–${b[0]}:${b[1]}`;
+}
+const pageEntriesOf = k => myEntries().filter(e => e.kind === 'pages' && e.khatmId === k?.id && e.mushafId === k?.mushafId && Number.isInteger(e.fromPage));
+const countsForKhatm = e => e.readingTrack === 'main' || (e.readingTrack === 'supplementary' && e.countsToKhatm === true);
+function coverage(mode, k = khatm()) {
+  const set = new Set();
+  pageEntriesOf(k).filter(e => e.mode === mode && countsForKhatm(e)).forEach(e => { for (let i = e.fromPage; i <= e.toPage; i++) set.add(i); });
+  return set;
+}
+// «Жалғастыру» тек негізгі бағыттағы соңғы арабша оқуға сүйенеді.
+const lastMain = () => pageEntriesOf(khatm()).filter(e => e.readingTrack === 'main' && e.mode === 'read').at(-1);
+const nextPage = () => Math.min(604, (lastMain()?.toPage || 0) + 1);
+function familyCoverage(f = familyKhatm()) {
+  const set = new Set(); if (!f) return set;
+  db.entries.filter(e => e.kind === 'pages' && e.readingTrack === 'family' && e.familyKhatmId === f.id && e.mode === 'read' && e.mushafId === f.mushafId)
+    .forEach(e => { for (let i = e.fromPage; i <= e.toPage; i++) set.add(i); });
+  return set;
+}
+function lastThuFri() {
+  const d = new Date(); d.setHours(12, 0, 0, 0);
+  if (d.getDay() === 4) { const f = new Date(d); f.setDate(d.getDate() + 1); return [localDate(d), localDate(f)]; }
+  while (d.getDay() !== 5) d.setDate(d.getDate() - 1);
+  const t = new Date(d); t.setDate(d.getDate() - 1);
+  return [localDate(t), localDate(d)];
+}
+
+/* ---------- Жазу ---------- */
+function addPageEntry({ track, mode, from, to, date, note, counts }) {
+  const p = profile();
+  let khatmId = null, familyKhatmId = null, mushafId;
+  if (track === 'family') {
+    const f = familyKhatm();
+    if (!f) { alert('Алдымен «Бірлескен хатым» бөлімінде жаңа бірлескен хатым бастаңыз.'); return false; }
+    familyKhatmId = f.id; mushafId = f.mushafId;
+  } else { const k = khatm(); khatmId = k.id; mushafId = k.mushafId; }
+  db.entries.push({
+    id: uid(), schemaVersion: SCHEMA, profileId: active, kind: 'pages', readingTrack: track, mode,
+    countsToKhatm: track === 'supplementary' ? !!counts : undefined,
+    khatmId, familyKhatmId, mushafId, fromPage: from, toPage: to,
+    localDate: date || localDate(), createdAtUTC: nowISO(), note: note || '',
+    rawInput: { fromPage: from, toPage: to, mushafId, track }
+  });
+  checkCompletion(); save(); render(); return true;
+}
+function checkCompletion() {
+  const k = khatm();
+  if (k && !k.completedAt && coverage('read', k).size === 604) k.completedAt = nowISO();
+  const f = familyKhatm();
+  if (f && !f.completedAt && familyCoverage(f).size === 604) f.completedAt = nowISO();
+}
+
+/* ---------- Көрсету ---------- */
+function showTab(tab) {
+  ['home', 'history', 'family', 'notes', 'settings'].forEach(id => $(id).classList.toggle('hidden', id !== tab));
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  render();
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+function render() {
+  const p = profile(), k = khatm(), today = localDate();
+  document.body.classList.toggle('dark', !!db.settings.dark);
+  $('profile').innerHTML = db.profiles.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+  $('profile').value = active;
+
+  // Негізгі хатым
+  const np = nextPage(), r = rows(k.mushafId);
+  $('nextPage').textContent = np;
+  $('nextAyah').textContent = r ? `${np}-бет ${r[np - 1][0]}:${r[np - 1][1]} аятынан басталады.` : '';
+  $('mushafLabel').textContent = Q.mushafs[k.mushafId]?.label || k.mushafId;
+  if (!$('fromPage').value) { $('fromPage').value = np; $('toPage').value = np; }
+  $('entryDate').value ||= today;
+  $('pauseDate').value ||= today;
+  $('countsBox').classList.toggle('hidden', $('track').value !== 'supplementary');
+
+  const read = coverage('read'), main = pageEntriesOf(k).filter(e => e.mode === 'read' && countsForKhatm(e));
+  const pct = read.size / 604 * 100;
+  $('coverage').textContent = `${read.size} / 604 бірегей бет`;
+  $('percent').textContent = pct.toFixed(1) + '%';
+  $('coverageBar').style.width = pct + '%';
+  $('coverageInfo').textContent = `Осы хатымда барлығы ${main.reduce((n, e) => n + e.toPage - e.fromPage + 1, 0)} бет оқылды (қайталауларымен). Мағынасы: ${coverage('translation').size}, тыңдау: ${coverage('listen').size} бірегей бет — бұлар арабша оқу есебіне қосылмайды.`;
+  $('khatmName').textContent = k.name;
+  $('khatmDone').classList.toggle('hidden', !k.completedAt);
+  $('khatmDone').textContent = k.completedAt ? `Хатым ${k.completedAt.slice(0, 10)} күні аяқталды. Жаңа хатымды өзіңізге ыңғайлы кезде бастаңыз.` : '';
+
+  const todayPages = myEntries().filter(e => e.localDate === today && e.kind === 'pages' && e.mode === 'read').reduce((s, e) => s + e.toPage - e.fromPage + 1, 0);
+  $('todayInfo').textContent = p.goal ? `Бүгін арабша: ${todayPages} бет · бағдар: ${p.goal} бет` : `Бүгін арабша: ${todayPages} бет`;
+  $('todayInfo').classList.toggle('hidden', !!p.hideStats);
+
+  // Апта
+  const start = new Date(); start.setHours(12, 0, 0, 0); start.setDate(start.getDate() - (start.getDay() + 6) % 7);
+  const pauses = new Set(db.pauses.filter(x => x.profileId === active).map(x => x.localDate));
+  let days = 0;
+  $('week').innerHTML = ['Дс', 'Сс', 'Ср', 'Бс', 'Жм', 'Сб', 'Жс'].map((n, i) => {
+    const d = new Date(start); d.setDate(start.getDate() + i); const ds = localDate(d);
+    const on = myEntries().some(e => e.localDate === ds && e.mode === 'read'), pz = pauses.has(ds);
+    if (on) days++;
+    return `<div class="day ${on ? 'on' : ''} ${pz ? 'pause' : ''}">${n}<div>${on ? '✓' : pz ? '○' : '·'}</div></div>`;
+  }).join('');
+  $('weekText').textContent = `Осы аптада ${days} күн арабша оқыдыңыз. ○ — үзіліс.`;
+  $('weekText').classList.toggle('hidden', !!p.hideStats);
+  $('toggleStats').textContent = p.hideStats ? 'Статистиканы көрсету' : 'Статистиканы жасыру';
+  $('totalRead').textContent = `Барлық уақытта арабша: ${myEntries().filter(e => e.kind === 'pages' && e.mode === 'read').reduce((s, e) => s + e.toPage - e.fromPage + 1, 0)} бет (қайталауларымен).`;
+  $('totalRead').classList.toggle('hidden', !!p.hideStats);
+
+  // Кәһф
+  const [thu, fri] = lastThuFri();
+  const wk = myEntries().filter(e => e.kind === 'kahf' && (e.localDate === thu || e.localDate === fri));
+  const cnt = m => { const s = new Set(); wk.filter(e => e.mode === m).forEach(e => { for (let i = e.fromAyah; i <= e.toAyah; i++) s.add(i); }); return s.size; };
+  $('kahfInfo').textContent = `${thu} – ${fri}: арабша ${cnt('read')}/110 аят, тыңдау ${cnt('listen')}/110 аят, мағынасы ${cnt('translation')}/110 аят.`;
+
+  // Жоспар
+  $('targetDate').value = p.target || '';
+  let msg = 'Аяқтау күнін таңдасаңыз, қалған беттерге жұмсақ бағдар есептеледі. Үзіліс күндері есептен шығарылады.';
+  if (p.target) {
+    let left = Math.round((new Date(p.target + 'T12:00:00') - new Date(today + 'T12:00:00')) / 86400000) + 1;
+    const fp = db.pauses.filter(x => x.profileId === active && x.localDate >= today && x.localDate <= p.target).length;
+    const active_days = left - fp, rest = 604 - read.size;
+    msg = active_days > 0 ? `Қалған ${rest} бетке шамамен ${(rest / active_days).toFixed(1)} бет/күн (${active_days} оқу күні, ${fp} үзіліс күні шегерілді). Бұл міндет емес.` : 'Таңдалған күн өтіп кеткен немесе толық үзіліске түседі. Күнді еркін өзгертіңіз.';
+  }
+  $('targetInfo').textContent = msg;
+
+  // Тарих
+  $('khatmList').innerHTML = db.khatms.filter(x => x.profileId === active).slice().reverse().map(x => {
+    const c = coverage('read', x).size;
+    return `<div class="entry"><strong>${esc(x.name)}</strong><span class="tag">${esc(Q.mushafs[x.mushafId]?.label || x.mushafId)}</span><br><small>${x.createdAt.slice(0, 10)} басталды · ${x.completedAt ? x.completedAt.slice(0, 10) + ' аяқталды' : c + '/604 бет'}</small></div>`;
+  }).join('');
+  $('entries').innerHTML = myEntries().slice().reverse().map(e => {
+    const what = e.kind === 'kahf'
+      ? `Кәһф: ${e.fromAyah}–${e.toAyah} аят`
+      : `${e.fromPage}–${e.toPage} бет${ayahRange(e.fromPage, e.toPage, e.mushafId) ? ' · ' + ayahRange(e.fromPage, e.toPage, e.mushafId) : ''}`;
+    const tr = e.kind === 'pages' ? `<span class="tag">${TRACK[e.readingTrack] || e.readingTrack}${e.readingTrack === 'supplementary' && e.countsToKhatm ? ' · хатымға қосылған' : ''}</span>` : '';
+    const toggle = e.kind === 'pages' && e.readingTrack === 'supplementary' && e.khatmId ? `<button data-toggle-count="${esc(e.id)}">${e.countsToKhatm ? 'Хатымнан алып тастау' : 'Хатымға қосу'}</button> ` : '';
+    return `<div class="entry"><div class="row"><strong>${esc(e.localDate)}</strong><small>${MODE[e.mode] || esc(e.mode)}${tr}</small></div><div>${what}</div>${e.note ? `<small>${esc(e.note)}</small><br>` : ''}${toggle}<button data-delete-entry="${esc(e.id)}">Өшіру</button></div>`;
+  }).join('') || '<p class="muted">Әзірге жазба жоқ.</p>';
+
+  // Бірлескен
+  const f = familyKhatm();
+  $('familyNone').classList.toggle('hidden', !!f);
+  $('familyActive').classList.toggle('hidden', !f);
+  $('newFamily').textContent = f ? 'Осы хатымды жауып, жаңасын бастау' : 'Жаңа бірлескен хатым бастау';
+  if (f) {
+    const fc = familyCoverage(f);
+    $('familyTitle').textContent = `${f.name} · ${f.createdAt.slice(0, 10)} басталды`;
+    $('familyBar').style.width = (fc.size / 604 * 100) + '%';
+    $('familyInfo').textContent = f.completedAt ? `Бірлескен хатым ${f.completedAt.slice(0, 10)} аяқталды.` : `${fc.size}/604 бірегей бет оқылды.`;
+    if (!$('juz').options.length) $('juz').innerHTML = Array.from({ length: 30 }, (_, i) => { const [a, b] = Q.juzPages(i + 1); return `<option value="${i + 1}">${i + 1}-пара · ${a}–${b} бет</option>`; }).join('');
+    $('assignee').innerHTML = db.profiles.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+    $('assignments').innerHTML = db.assignments.filter(a => a.familyKhatmId === f.id).sort((a, b) => a.juz - b.juz).map(a => {
+      const [s, t] = Q.juzPages(a.juz); let n = 0; for (let i = s; i <= t; i++) if (fc.has(i)) n++;
+      return `<div class="entry">${a.juz}-пара (${s}–${t} бет): ${esc(db.profiles.find(x => x.id === a.profileId)?.name || 'Белгісіз')} · ${n === t - s + 1 ? '✓ оқылды' : n + '/' + (t - s + 1) + ' бет'}<br><button data-unassign="${esc(a.id)}">Босату</button></div>`;
+    }).join('');
+  }
+  $('familyHistory').innerHTML = db.familyKhatms.filter(x => x.closedAt).slice().reverse().map(x => `<div class="entry"><strong>${esc(x.name)}</strong><br><small>${x.createdAt.slice(0, 10)} – ${x.closedAt.slice(0, 10)} · ${x.completedAt ? 'аяқталған' : familyCoverage(x).size + '/604 бет'}</small></div>`).join('') || '<p class="muted">Әзірге жоқ.</p>';
+
+  // Ойлар
+  $('notesList').innerHTML = db.notes.filter(n => n.profileId === active).slice().reverse().map(n => `<div class="entry"><strong>${n.surah}:${n.ayah}</strong> · ${esc(n.localDate)}<p>${esc(n.text)}</p><button data-delete-note="${esc(n.id)}">Өшіру</button></div>`).join('');
+
+  // Баптау
+  $('profileName').value = p.name;
+  $('mushaf').innerHTML = Object.entries(Q.mushafs).map(([id, m]) => `<option value="${id}">${esc(m.label)}</option>`).join('');
+  $('mushaf').value = p.mushaf;
+  $('mushafNote').textContent = p.mushaf !== k.mushafId ? `Ағымдағы хатым «${Q.mushafs[k.mushafId]?.label}» бойынша жалғасады. Таңдалған басылым келесі хатымнан қолданылады.` : '';
+  $('dailyGoal').value = p.goal;
+  $('hideStats').checked = !!p.hideStats;
+  $('darkMode').checked = !!db.settings.dark;
+  const age = db.backupAt ? Math.floor((Date.now() - new Date(db.backupAt)) / 86400000) : null;
+  $('backupStatus').textContent = db.backupAt ? `Соңғы көшірме: ${db.backupAt.slice(0, 10)}${age >= 7 ? ` — ${age} күн өтті, жаңа көшірме жасаңыз.` : ''}` : 'Резервтік көшірме әлі жасалмаған.';
+  $('metaInfo').textContent = `Нұсқа ${APP_VERSION} · schemaVersion ${db.schemaVersion} · ${db.entries.length} жазба · аят саны ${Q.totalAyahs} · кестелер: ${Object.entries(Q.mushafs).map(([id, m]) => `${id} (${m.source})`).join(', ')}.`;
+}
+
+/* ---------- Әрекеттер ---------- */
+$('profile').onchange = e => { active = e.target.value; $('fromPage').value = ''; save(); render(); };
+$('addProfile').onclick = () => {
+  const name = prompt('Жаңа оқырманның аты:'); if (!name?.trim()) return;
+  const id = uid();
+  db.profiles.push({ id, name: name.trim().slice(0, 70), mushaf: profile().mushaf, goal: 1, hideStats: false, target: '' });
+  db.khatms.push({ id: uid(), profileId: id, name: '1-хатым', mushafId: profile().mushaf, createdAt: nowISO(), completedAt: null });
+  active = id; $('fromPage').value = ''; save(); render();
+};
+document.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => {
+  const n = +b.dataset.quick, from = nextPage();
+  if (lastMain()?.toPage === 604) return alert('Хатым соңына жеттіңіз. Жаңа хатымды өзіңізге ыңғайлы кезде бастаңыз.');
+  addPageEntry({ track: 'main', mode: 'read', from, to: Math.min(604, from + n - 1) });
+  $('fromPage').value = '';
+});
+$('track').onchange = () => $('countsBox').classList.toggle('hidden', $('track').value !== 'supplementary');
+$('readingForm').onsubmit = e => {
+  e.preventDefault();
+  const a = +$('fromPage').value, b = +$('toPage').value;
+  if (!validRange(a, b)) return alert('Бет аралығын тексеріңіз (1–604, бастапқы бет соңғыдан үлкен болмауы керек).');
+  if (addPageEntry({ track: $('track').value, mode: $('activity').value, from: a, to: b, date: $('entryDate').value, note: $('entryNote').value.trim(), counts: $('countsToKhatm').checked })) {
+    $('entryNote').value = ''; $('countsToKhatm').checked = false; $('fromPage').value = ''; render();
+  }
+};
+$('newKhatm').onclick = () => {
+  if (!confirm('Жаңа жеке хатым ашасыз ба? Бұрынғы хатым мен тарих сақталады.')) return;
+  const n = db.khatms.filter(k => k.profileId === active).length + 1;
+  db.khatms.push({ id: uid(), profileId: active, name: `${n}-хатым`, mushafId: profile().mushaf, createdAt: nowISO(), completedAt: null });
+  $('fromPage').value = ''; save(); render();
+};
+function togglePause(date, reason) {
+  if (!date) return;
+  const i = db.pauses.findIndex(x => x.profileId === active && x.localDate === date);
+  if (i >= 0) db.pauses.splice(i, 1); else db.pauses.push({ id: uid(), schemaVersion: SCHEMA, profileId: active, localDate: date, reason, createdAtUTC: nowISO() });
+  save(); render();
+}
+$('pauseToday').onclick = () => togglePause(localDate(), 'unspecified');
+$('addPause').onclick = () => togglePause($('pauseDate').value, $('pauseReason').value);
+$('toggleStats').onclick = () => { profile().hideStats = !profile().hideStats; save(); render(); };
+$('saveKahf').onclick = () => {
+  const a = +$('kahfFrom').value, b = +$('kahfTo').value;
+  if (!validRange(a, b, 110)) return alert('1–110 аралығын көрсетіңіз.');
+  db.entries.push({ id: uid(), schemaVersion: SCHEMA, profileId: active, kind: 'kahf', surah: 18, fromAyah: a, toAyah: b, mode: $('kahfMode').value, localDate: localDate(), createdAtUTC: nowISO(), rawInput: { surah: 18, fromAyah: a, toAyah: b } });
+  save(); render();
+};
+$('saveTarget').onclick = () => { profile().target = $('targetDate').value; save(); render(); };
+$('saveSettings').onclick = () => {
+  const p = profile(), k = khatm();
+  p.name = $('profileName').value.trim().slice(0, 70) || p.name;
+  p.goal = Math.max(0, Math.min(604, Number($('dailyGoal').value) || 0));
+  p.hideStats = $('hideStats').checked;
+  db.settings.dark = $('darkMode').checked;
+  const m = $('mushaf').value;
+  if (Q.mushafs[m] && m !== p.mushaf) {
+    p.mushaf = m;
+    if (!pageEntriesOf(k).length) k.mushafId = m; // хатымда әлі жазба жоқ болса — бірден ауыстырамыз
+  }
+  save(); render(); alert('Сақталды');
+};
+$('saveNote').onclick = () => {
+  const s = +$('noteSurah').value, a = +$('noteAyah').value, t = $('noteText').value.trim();
+  if (!Number.isInteger(s) || s < 1 || s > 114 || !Number.isInteger(a) || a < 1 || a > Q.surahAyahCounts[s - 1] || !t) return alert('Сүре, аят нөмірін және мәтінді тексеріңіз.');
+  db.notes.push({ id: uid(), schemaVersion: SCHEMA, profileId: active, surah: s, ayah: a, text: t, localDate: localDate(), createdAtUTC: nowISO() });
+  $('noteText').value = ''; save(); render();
+};
+$('newFamily').onclick = () => {
+  const f = familyKhatm();
+  if (f && !confirm('Ағымдағы бірлескен хатым жабылып, тарихқа сақталады. Жаңасын бастайсыз ба?')) return;
+  if (f) f.closedAt = nowISO();
+  const n = db.familyKhatms.length + 1;
+  db.familyKhatms.push({ id: uid(), name: `${n}-бірлескен хатым`, mushafId: profile().mushaf, createdAt: nowISO(), completedAt: null, closedAt: null });
+  save(); render();
+};
+$('assignJuz').onclick = () => {
+  const f = familyKhatm(); if (!f) return;
+  const j = +$('juz').value, pid = $('assignee').value;
+  const ex = db.assignments.find(a => a.familyKhatmId === f.id && a.juz === j);
+  if (ex && ex.profileId !== pid && !confirm(`Бұл пара ${db.profiles.find(x => x.id === ex.profileId)?.name || 'басқа адамға'} тағайындалған. Ауыстырасыз ба?`)) return;
+  db.assignments = db.assignments.filter(a => !(a.familyKhatmId === f.id && a.juz === j));
+  db.assignments.push({ id: uid(), familyKhatmId: f.id, juz: j, profileId: pid });
+  save(); render();
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.deleteEntry) { if (!confirm('Осы жазбаны өшіресіз бе?')) return; db.entries = db.entries.filter(x => x.id !== b.dataset.deleteEntry); save(); render(); }
+  if (b.dataset.toggleCount) { const en = db.entries.find(x => x.id === b.dataset.toggleCount); if (en) { en.countsToKhatm = !en.countsToKhatm; checkCompletion(); save(); render(); } }
+  if (b.dataset.deleteNote) { if (!confirm('Ой-толғанысты өшіресіз бе?')) return; db.notes = db.notes.filter(x => x.id !== b.dataset.deleteNote); save(); render(); }
+  if (b.dataset.unassign) { db.assignments = db.assignments.filter(x => x.id !== b.dataset.unassign); save(); render(); }
+});
+
+/* ---------- Резервтік көшірме ---------- */
+function backupFile() {
+  db.backupAt = nowISO(); save();
+  const payload = { ...db, exportedAt: db.backupAt, appVersion: APP_VERSION };
+  const name = `quran-kundeligi-${localDate()}.json`;
+  return { name, blob: new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }) };
+}
+function download({ name, blob }) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+$('exportFile').onclick = () => { download(backupFile()); render(); };
+$('exportShare').onclick = async () => {
+  const f = backupFile(), file = new File([f.blob], f.name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Құран күнделігі — көшірме' }); }
+    catch (err) { if (err.name !== 'AbortError') { alert('Бөлісу мүмкін болмады, файл жүктеледі.'); download(f); } }
+  } else { alert('Бұл браузерде файлмен бөлісу қолжетімсіз. Файл жүктеледі.'); download(f); }
+  render();
+};
+$('importButton').onclick = () => $('importFile').click();
+$('importFile').onchange = async e => {
+  try {
+    const file = e.target.files[0]; if (!file) return;
+    const other = migrate(JSON.parse(await file.text()));
+    const conflicts = [];
+    let added = 0;
+    for (const k of ARRAYS) {
+      const have = new Map(db[k].map(x => [x.id, x]));
+      for (const x of other[k]) {
+        if (!x.id) throw Error('Идентификаторы жоқ жазба табылды: ' + k);
+        if (have.has(x.id)) { if (JSON.stringify(have.get(x.id)) !== JSON.stringify(x)) conflicts.push(k + ': ' + x.id.slice(0, 8)); }
+        else added++;
+      }
+    }
+    if (conflicts.length) return alert(`Қалпына келтіру тоқтатылды: ${conflicts.length} жазбаның ID-і бірдей, бірақ мазмұны өзгеше. Ешнәрсе өзгертілмеді.\n` + conflicts.slice(0, 8).join('\n'));
+    if (!added) return alert('Бұл көшірмедегі барлық жазба бұрыннан бар. Өзгеріс жоқ.');
+    if (!confirm(`${added} жаңа жазба қосылады. Бар деректер өшірілмейді. Жалғастырасыз ба?`)) return;
+    for (const k of ARRAYS) { const seen = new Set(db[k].map(x => x.id)); other[k].forEach(x => { if (!seen.has(x.id)) db[k].push(x); }); }
+    ensureBasics(); save(); render();
+    alert(`Дайын: ${added} жазба қосылды.`);
+  } catch (err) { alert('Қалпына келтіру қатесі: ' + err.message); }
+  finally { e.target.value = ''; }
+};
+
+/* ---------- Іске қосу ---------- */
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+save(); render();
+window.__QK = { get db() { return db; } }; // тест үшін ғана
+})();
+</script>
+</body>
+</html>
